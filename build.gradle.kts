@@ -3,6 +3,7 @@ plugins {
     kotlin("plugin.serialization") version "2.4.10"
     id("xyz.jpenilla.run-paper") version "3.1.0"
     id("de.eldoria.plugin-yml.paper") version "0.9.0"
+    id("com.gradleup.shadow") version "9.2.2"
 }
 
 group = "dev.thebjoredcraft.phantom"
