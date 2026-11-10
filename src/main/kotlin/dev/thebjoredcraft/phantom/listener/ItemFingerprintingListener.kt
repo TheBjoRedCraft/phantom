@@ -17,6 +17,7 @@ object ItemFingerprintingListener : Listener {
         val player = event.whoClicked as? Player ?: return
         val current = event.currentItem
         val cursor = event.cursor
+        val action = event.action
 
         if (Fingerprints.isTracked(current)) {
             Fingerprints.ensure(current)
@@ -26,9 +27,7 @@ object ItemFingerprintingListener : Listener {
             Fingerprints.ensure(cursor)
         }
 
-        val action = event.action
-
-        if (action == InventoryAction.COLLECT_TO_CURSOR && cursor != null && !cursor.type.isAir) {
+        if (action == InventoryAction.COLLECT_TO_CURSOR && !cursor.type.isAir) {
             event.isCancelled = true
 
             val topInv = event.view.topInventory
@@ -90,17 +89,53 @@ object ItemFingerprintingListener : Listener {
             return
         }
 
+        if (action == InventoryAction.PICKUP_HALF && current != null && !current.type.isAir) {
+            event.isCancelled = true
+
+            val halfAmount = (current.amount + 1) / 2
+            val remainingAmount = current.amount - halfAmount
+
+            if (remainingAmount > 0) {
+                current.amount = remainingAmount
+            } else {
+                event.clickedInventory?.setItem(event.slot, null)
+            }
+
+            val splitStack = current.clone().apply {
+                amount = halfAmount
+            }
+            Fingerprints.assign(splitStack)
+
+            player.setItemOnCursor(splitStack)
+            event.clickedInventory?.setItem(event.slot, if (current.amount > 0) current else null)
+
+            player.scheduler.run(plugin, {
+                player.updateInventory()
+            }, {})
+
+            return
+        }
+
         player.scheduler.run(plugin, {
             reconcile(player, action)
         }, {})
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    fun onCraft(event: CraftItemEvent) {
-        val result = event.recipe.result
-
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    fun onPrepareCraft(event: PrepareItemCraftEvent) {
+        val result = event.recipe?.result ?: return
         if (Fingerprints.isTracked(result)) {
             Fingerprints.assign(result)
+            event.inventory.result = result
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onCraft(event: CraftItemEvent) {
+        val result = event.inventory.result
+        if (result != null && Fingerprints.isTracked(result)) {
+            Fingerprints.assign(result)
+            event.inventory.result = result
         }
     }
 
@@ -143,9 +178,11 @@ object ItemFingerprintingListener : Listener {
     }
 
     private val splitActions = setOf(
-        InventoryAction.PICKUP_HALF, InventoryAction.PLACE_ONE,
-        InventoryAction.PLACE_SOME, InventoryAction.DROP_ONE_SLOT,
-        InventoryAction.DROP_ONE_CURSOR, InventoryAction.MOVE_TO_OTHER_INVENTORY
+        InventoryAction.PLACE_ONE,
+        InventoryAction.PLACE_SOME,
+        InventoryAction.DROP_ONE_SLOT,
+        InventoryAction.DROP_ONE_CURSOR,
+        InventoryAction.MOVE_TO_OTHER_INVENTORY
     )
 
     private fun reconcile(player: Player, action: InventoryAction) {
