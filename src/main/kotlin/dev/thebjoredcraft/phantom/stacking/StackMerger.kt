@@ -1,6 +1,5 @@
 package dev.thebjoredcraft.phantom.stacking
 
-import dev.thebjoredcraft.phantom.fingerprint.FingerprintRegistry
 import dev.thebjoredcraft.phantom.fingerprint.Fingerprints
 import org.bukkit.inventory.Inventory
 import org.bukkit.inventory.ItemStack
@@ -22,13 +21,9 @@ object StackMerger {
             return 0
         }
 
-        val oldTarget = Fingerprints.get(target)
-        val oldSource = Fingerprints.get(source)
-
         target.amount += moved
         source.amount -= moved
 
-        FingerprintRegistry.retire(oldTarget, oldSource)
         Fingerprints.assign(target)
 
         if (source.amount > 0) {
