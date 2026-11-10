@@ -121,15 +121,6 @@ object ItemFingerprintingListener : Listener {
         }, {})
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    fun onPrepareCraft(event: PrepareItemCraftEvent) {
-        val result = event.recipe?.result ?: return
-        if (Fingerprints.isTracked(result)) {
-            Fingerprints.assign(result)
-            event.inventory.result = result
-        }
-    }
-
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     fun onCraft(event: CraftItemEvent) {
         val result = event.inventory.result
@@ -145,8 +136,8 @@ object ItemFingerprintingListener : Listener {
 
         event.isCancelled = true
 
-        val entityItem = event.item
-        val stack = entityItem.itemStack
+        val itemEntity = event.item
+        val stack = itemEntity.itemStack
         val remaining = StackMerger.insert(player.inventory, stack)
 
         val pickedUp = stack.amount - (remaining?.amount ?: 0)
@@ -154,12 +145,12 @@ object ItemFingerprintingListener : Listener {
             return
         }
 
-        player.playPickupItemAnimation(entityItem, pickedUp)
+        player.playPickupItemAnimation(itemEntity, pickedUp)
 
         if (remaining == null) {
-            entityItem.remove()
+            itemEntity.remove()
         } else {
-            entityItem.itemStack = remaining
+            itemEntity.itemStack = remaining
         }
     }
 
@@ -173,7 +164,19 @@ object ItemFingerprintingListener : Listener {
         val cursor = event.oldCursor
 
         if (Fingerprints.isTracked(cursor)) {
-            event.newItems.values.forEach { Fingerprints.assign(it) }
+            val view = event.view
+            val rawSlots = event.rawSlots.toList()
+
+            event.whoClicked.scheduler.run(plugin, {
+                rawSlots.forEach { rawSlot ->
+                    val item = view.getItem(rawSlot)
+                    if (Fingerprints.isTracked(item)) {
+                        Fingerprints.assign(item)
+                        view.setItem(rawSlot, item)
+                    }
+                }
+                (event.whoClicked as? Player)?.updateInventory()
+            }, {})
         }
     }
 
@@ -189,7 +192,10 @@ object ItemFingerprintingListener : Listener {
         DupeDetector.findDuplicates(player.inventory.contents.toList() + player.itemOnCursor)
             .forEach { (id, stacks) ->
                 if (action in splitActions) {
-                    stacks.drop(1).forEach { Fingerprints.assign(it) }
+                    stacks.drop(1).forEach {
+                        Fingerprints.assign(it)
+                    }
+
                     player.updateInventory()
                 } else {
                     DupeDetector.alert(player, id, stacks)
