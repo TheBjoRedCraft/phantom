@@ -104,6 +104,7 @@ object ItemFingerprintingListener : Listener {
             val splitStack = current.clone().apply {
                 amount = halfAmount
             }
+
             Fingerprints.assign(splitStack)
 
             player.setItemOnCursor(splitStack)
