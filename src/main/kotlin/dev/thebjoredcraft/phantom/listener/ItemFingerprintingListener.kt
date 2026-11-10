@@ -8,10 +8,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.EntityPickupItemEvent
-import org.bukkit.event.inventory.InventoryAction
-import org.bukkit.event.inventory.InventoryClickEvent
-import org.bukkit.event.inventory.InventoryDragEvent
-import org.bukkit.event.inventory.InventoryMoveItemEvent
+import org.bukkit.event.inventory.*
 
 object ItemFingerprintingListener : Listener {
 
@@ -30,6 +27,38 @@ object ItemFingerprintingListener : Listener {
         }
 
         val action = event.action
+
+        if (action == InventoryAction.COLLECT_TO_CURSOR && cursor != null && !cursor.type.isAir) {
+            event.isCancelled = true
+
+            val topInv = event.view.topInventory
+            val allInventories = listOfNotNull(topInv, player.inventory)
+
+            for (targetInv in allInventories) {
+                for (slot in 0 until targetInv.size) {
+                    if (cursor.amount >= cursor.maxStackSize) break
+                    val item = targetInv.getItem(slot) ?: continue
+                    if (item == cursor) continue
+
+                    if (StackMerger.canMerge(cursor, item)) {
+                        StackMerger.merge(cursor, item)
+                        if (item.amount <= 0) {
+                            targetInv.setItem(slot, null)
+                        } else {
+                            targetInv.setItem(slot, item)
+                        }
+                    }
+                }
+            }
+
+            player.setItemOnCursor(cursor)
+            player.scheduler.run(plugin, {
+                player.updateInventory()
+            }, {})
+
+            return
+        }
+
         if (action in setOf(
                 InventoryAction.PLACE_ALL,
                 InventoryAction.PLACE_SOME,
@@ -64,6 +93,15 @@ object ItemFingerprintingListener : Listener {
         player.scheduler.run(plugin, {
             reconcile(player, action)
         }, {})
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    fun onCraft(event: CraftItemEvent) {
+        val result = event.recipe.result
+
+        if (Fingerprints.isTracked(result)) {
+            Fingerprints.assign(result)
+        }
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -107,7 +145,7 @@ object ItemFingerprintingListener : Listener {
     private val splitActions = setOf(
         InventoryAction.PICKUP_HALF, InventoryAction.PLACE_ONE,
         InventoryAction.PLACE_SOME, InventoryAction.DROP_ONE_SLOT,
-        InventoryAction.DROP_ONE_CURSOR
+        InventoryAction.DROP_ONE_CURSOR, InventoryAction.MOVE_TO_OTHER_INVENTORY
     )
 
     private fun reconcile(player: Player, action: InventoryAction) {
