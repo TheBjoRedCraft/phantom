@@ -11,7 +11,6 @@ val plugin get() = JavaPlugin.getPlugin(PhantomMain::class.java)
 class PhantomMain : SuspendingJavaPlugin() {
     override suspend fun onEnableAsync() {
         Bukkit.getPluginManager().registerEvents(ItemFingerprintingListener, this)
-
         FingerprintCommand.register()
     }
 }
