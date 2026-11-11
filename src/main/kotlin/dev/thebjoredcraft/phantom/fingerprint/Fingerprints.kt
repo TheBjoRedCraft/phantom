@@ -16,10 +16,7 @@ object Fingerprints {
             return null
         }
 
-        val raw =
-            item.itemMeta.persistentDataContainer.get(key, UUIDType) ?: return null
-
-        return runCatching { UUID.fromString(raw) }.getOrNull()
+        return item.itemMeta.persistentDataContainer.get(key, UUIDType)
     }
 
     fun assign(item: ItemStack?): UUID {
