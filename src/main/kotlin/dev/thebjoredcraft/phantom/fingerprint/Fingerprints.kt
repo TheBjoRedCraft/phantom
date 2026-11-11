@@ -6,8 +6,6 @@ import org.bukkit.inventory.ItemStack
 import java.util.*
 
 object Fingerprints {
-    private val key get() = PhantomConstants.fingerprintKey
-
     fun isTracked(item: ItemStack?): Boolean =
         item != null && !item.type.isAir
 
@@ -16,14 +14,14 @@ object Fingerprints {
             return null
         }
 
-        return item.itemMeta.persistentDataContainer.get(key, UUIDType)
+        return item.itemMeta.persistentDataContainer.get(PhantomConstants.fingerprintKey, UUIDType)
     }
 
     fun assign(item: ItemStack?): UUID {
         val id = UUID.randomUUID()
         item?.editMeta {
             it.persistentDataContainer.set(
-                key,
+                PhantomConstants.fingerprintKey,
                 UUIDType,
                 id
             )
@@ -41,7 +39,7 @@ object Fingerprints {
     }
 
     private fun stripped(item: ItemStack) = item.asOne().apply {
-        editMeta { it.persistentDataContainer.remove(key) }
+        editMeta { it.persistentDataContainer.remove(PhantomConstants.fingerprintKey) }
     }
 
     fun similarIgnoringFingerprint(a: ItemStack, b: ItemStack) =
