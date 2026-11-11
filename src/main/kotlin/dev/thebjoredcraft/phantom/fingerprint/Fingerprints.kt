@@ -1,8 +1,8 @@
 package dev.thebjoredcraft.phantom.fingerprint
 
 import dev.thebjoredcraft.phantom.PhantomConstants
+import dev.thebjoredcraft.phantom.util.UUIDType
 import org.bukkit.inventory.ItemStack
-import org.bukkit.persistence.PersistentDataType
 import java.util.*
 
 object Fingerprints {
@@ -17,7 +17,7 @@ object Fingerprints {
         }
 
         val raw =
-            item.itemMeta.persistentDataContainer.get(key, PersistentDataType.STRING) ?: return null
+            item.itemMeta.persistentDataContainer.get(key, UUIDType) ?: return null
 
         return runCatching { UUID.fromString(raw) }.getOrNull()
     }
@@ -27,8 +27,8 @@ object Fingerprints {
         item?.editMeta {
             it.persistentDataContainer.set(
                 key,
-                PersistentDataType.STRING,
-                id.toString()
+                UUIDType,
+                id
             )
         }
 
