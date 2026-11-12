@@ -8,15 +8,14 @@ import org.bukkit.inventory.ItemStack
 import java.util.*
 
 object DupeDetector {
-    fun findDuplicates(items: Iterable<ItemStack?>): Map<UUID, List<ItemStack>> {
-        return items.filterNotNull()
+    fun findDuplicates(items: Iterable<ItemStack?>): Map<UUID, List<ItemStack>> =
+        items.filterNotNull()
             .mapNotNull { item -> Fingerprints.get(item)?.let { it to item } }
             .groupBy({ it.first }, { it.second })
             .filterValues { it.size > 1 }
-    }
 
     fun alert(player: Player, id: UUID, stacks: List<ItemStack>) {
-        val type = if (stacks.isEmpty()) {
+        val typeString = if (stacks.isEmpty()) {
             "UNKNOWN"
         } else {
             stacks.distinctBy { it.type }.joinToString { it.type.name.lowercase() }
@@ -25,7 +24,7 @@ object DupeDetector {
         Bukkit.getOnlinePlayers()
             .filter { it.hasPermission("phantom.alert") }
             .forEach {
-                it.sendRichMessage("${PhantomConstants.PREFIX} Detected invalid <red>${stacks.size}x $type <white>on <red>${player.name}")
+                it.sendRichMessage("${PhantomConstants.PREFIX} Detected invalid <red>${stacks.size}x $typeString <white>on <red>${player.name}")
             }
     }
 }
