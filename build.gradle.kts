@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.TheBjoRedCraft.railway:railway-database:1.0.7")
+    implementation("com.github.TheBjoRedCraft.railway:railway-config:1.0.7")
     compileOnly("io.papermc.paper:paper-api:26.3.build.201-stable")
 
     implementation("com.github.shynixn.mccoroutine:mccoroutine-folia-api:2.23.0")
